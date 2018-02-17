@@ -28,13 +28,13 @@ pipeline {
 		   parallel {
 		     stage ('Deploy to Staging'){
 			steps {
-		 	  sh "scp -i /var/lib/jenkins/.ssh/MyEc2KeyPair.pem **/target/*.war ec2-user@${params.tomcat_dev}:/opt/tomcat/webapps"
+		 	  sh "scp -i /var/lib/jenkins/.ssh/MyEc2KeyPair.pem **/target/*.war ubuntu@${params.tomcat_dev}:/opt/tomcat/webapps"
 			}
 		     }
 
 		     stage ("Deploy to Production"){
 		       steps {
-			  sh "scp -i /var/lib/jenkins/.ssh/MyEc2KeyPair.pem **/target/*.war ec2-user@${params.tomcat_prod}:/opt/tomcat/webapps/."
+			  sh "scp -i /var/lib/jenkins/.ssh/MyEc2KeyPair.pem **/target/*.war ubuntu@${params.tomcat_prod}:/opt/tomcat/webapps/."
 		       }
 		     }
 		   }
