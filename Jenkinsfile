@@ -1,42 +1,43 @@
 pipeline {
-    agent any
-    stages{
-        stage('Build'){
-            steps {
-                sh 'mvn clean package'
-            }
-            post {
-                success {
-                    echo 'Now Archiving...'
-                    archiveArtifacts artifacts: '**/target/*.war'
-                }
-            }
-        }
-        stage ('Deploy to Staging'){
-            steps {
-                build job: 'Udemy-Deploy-to-staging'
-            }
-        }
+	agent any
 
-        stage ('Deploy to Production'){
-            steps{
-                timeout(time:5, unit:'DAYS'){
-                    input message:'Approve PRODUCTION Deployment?'
-                }
+	parameters {
+			 string(name: 'tomcat_dev', defaultValue: '54.154.2.62', description: 'Staging Server')
+			 string(name: 'tomcat_prod', defaultValue: '54.154.233.5', description: 'Production Server')
+		   }
 
-                build job: 'Udemy-Deploy-to-Prod'
+	triggers {
+		 pollSCM('* * * * *')
+		 }
+
+	
+	stages{
+	        stage('Build') {
+			         steps {
+				         sh 'mvn clean package'
+				       }
+				 post {
+					success {
+						echo 'Now Archiving...'
+						archiveArtifacts artifacts: '**/target/*.war'
+						}
+				      }
+				}
+
+		stage ('Deployments') {
+		   parallel {
+		     stage ('Deploy to Staging'){
+			steps {
+		 	  sh "scp -i /var/lib/jenkins/.ssh/MyEc2KeyPair.pem **/target/*.war ec2-user@${params.tomcat_dev}:/opt/tomcat/webapps"
+			}
+		     }
+
+		     stage ("Deploy to Production"){
+		       steps {
+			  sh "scp -i /var/lib/jenkins/.ssh/MyEc2KeyPair.pem **/target/*.war ec2-user@${params.tomcat_prod}:/opt/tomcat/webapps/."
+		       }
+		     }
+		   }
+		}
             }
-            post {
-                success {
-                    echo 'Code deployed to Production.'
-                }
-
-                failure {
-                    echo ' Deployment failed.'
-                }
-            }
-        }
-
-
-    }
 }
